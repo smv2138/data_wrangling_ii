@@ -176,7 +176,7 @@ we have 134k observations Its a setting with the data
 ``` r
 brfss_2010 = 
   GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv",
-      query = list("$limit" =5000 )) %>% 
+      query = list("$limit" = 5000 )) %>% 
    content("parsed")
 ```
 
@@ -193,3 +193,29 @@ brfss_2010 =
     ## )
 
     ## See spec(...) for full column specifications.
+
+## Some data aren’t so nice
+
+Look at Pokemon
+
+``` r
+pokemon_data = 
+  GET("https://pokeapi.co/api/v2/pokemon/1") %>% 
+  content
+
+pokemon_data$name
+```
+
+    ## [1] "bulbasaur"
+
+``` r
+pokemon_data$height
+```
+
+    ## [1] 7
+
+## Closing thoughts
+
+Make reasonable requests of API server for your data Have one rmd where
+you ask servers for the data Then do analysis in a differ rmd so you
+don’t have to ask for data everytime
