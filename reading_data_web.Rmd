@@ -101,6 +101,7 @@ swm_df =
 ## Get some water data (NYC Water)
 
 Example in both csv and json file
+"parsed" makes it a tibble
 ```{r}
 nyc_water = 
   GET("https://data.cityofnewyork.us/resource/ia2d-e54m.csv") %>% 
@@ -112,5 +113,18 @@ nyc_water_json =
   content("text") %>% 
   jsonlite::fromJSON() %>% 
   as_tibble()
+```
+
+
+## BRFSS Dataset
+
+Same process, different data
+We only have 1000 rows but the website says we have 134k observations
+Its a setting with the data
+```{r}
+brfss_2010 = 
+  GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv",
+      query = list("$limit" =5000 )) %>% 
+   content("parsed")
 ```
 

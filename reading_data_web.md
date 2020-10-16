@@ -143,7 +143,7 @@ swm_df =
 
 ## Get some water data (NYC Water)
 
-Example in both csv and json file
+Example in both csv and json file “parsed” makes it a tibble
 
 ``` r
 nyc_water = 
@@ -167,3 +167,29 @@ nyc_water_json =
   jsonlite::fromJSON() %>% 
   as_tibble()
 ```
+
+## BRFSS Dataset
+
+Same process, different data We only have 1000 rows but the website says
+we have 134k observations Its a setting with the data
+
+``` r
+brfss_2010 = 
+  GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv",
+      query = list("$limit" =5000 )) %>% 
+   content("parsed")
+```
+
+    ## Parsed with column specification:
+    ## cols(
+    ##   .default = col_character(),
+    ##   year = col_double(),
+    ##   sample_size = col_double(),
+    ##   data_value = col_double(),
+    ##   confidence_limit_low = col_double(),
+    ##   confidence_limit_high = col_double(),
+    ##   display_order = col_double(),
+    ##   locationid = col_logical()
+    ## )
+
+    ## See spec(...) for full column specifications.
