@@ -1,9 +1,11 @@
 ---
-title: "Exploratory Numeric Analysis"
+title: "Reading Data from the Web"
 output: github_document
 ---
 ```{r}
 library(tidyverse)
+library(rvest)
+library(httr)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -25,201 +27,73 @@ scale_fill_discrete = scale_fill_viridis_d
 ```
 
 
-## Load the weather data
+## Scrape a table from a website
 
-rnoaa package allows you to access data from online
-floor_date -> round down
+I want to first table from this pay (this page http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm)
+
+Read in the html
 ```{r}
-weather_df = 
-  rnoaa::meteo_pull_monitors(
-    c("USW00094728", "USC00519397", "USS0023B17S"),
-    var = c("PRCP", "TMIN", "TMAX"), 
-    date_min = "2017-01-01",
-    date_max = "2017-12-31") %>%
-  mutate(
-    name = recode(
-      id, 
-      USW00094728 = "CentralPark_NY", 
-      USC00519397 = "Waikiki_HA",
-      USS0023B17S = "Waterhole_WA"),
-    tmin = tmin / 10,
-    tmax = tmax / 10,
-    month = lubridate::floor_date(date, unit = "month")) %>%
-  select(name, id, everything())
+url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+drug_use_html = read_html(url)
+
 ```
 
-## `group_by`
-
+Extract the tables we want. focus on the first table
+Still not a tibble but close
 ```{r}
-weather_df %>% 
-  group_by(name, month) %>% 
-  ungroup()
+drug_use_html %>% 
+  html_nodes(css = "table")
 ```
 
-## counting things
-How many _________ exist?
-
-Count month / name observations
-n_obs is the variable created to define the function n()
+covert table from html to tibble format
+focus on the first table
+slice(-1) gers rid of first row
 ```{r}
-weather_df %>% 
-  group_by(name, month) %>% 
-  summarize(n_obs = n())
+tbl_marj = 
+  drug_use_html %>% 
+  html_nodes(css = "table") %>% 
+  first() %>% 
+  html_table() %>%
+  slice(-1) %>% 
+  as_tibble()
+
 ```
 
-We can use `count()`
-Does the same thing as above
+
+## star Wars Movie Info
+
+I want the data from (here) https://www.imdb.com/list/ls070150896/
+
 ```{r}
-weather_df %>% 
-  count(month, name = "n_obs")
+url = "https://www.imdb.com/list/ls070150896/"
+
+swm_html = read_html(url)
 ```
 
- **NEVER** USE BASE R'S `TABLE` function
-The result of this is not a dataframe
-YOu have to pull a variable out of a datafram to use the table function
-```{r}
-weather_df %>% 
-  pull(month) %>% 
-  table()
-```
- 
-Other helpful counters
-n_obs - number of observations in that month
-n_days - number of unique days in that month (how many dates in that month are distinct)
-```{r}
-weather_df %>% 
-  group_by(month) %>% 
-  summarize(n_obs = n(),
-            n_days = n_distinct(date))
-```
-
-## A digression on 2X2 tables 
-case_when is kind of like if/then
-TRUE ~ "" is just in case some observations don't fit into the categories defined
-
-Data that goes into a 2X2 table
-```{r}
-weather_df %>% 
-  filter(name != "Waikiki_HA") %>% 
-  mutate(
-    cold = case_when(
-      tmax < 5 ~ "cold",
-      tmax >= 5 ~ "not_cold",
-      TRUE      ~ ""
-    )
-  ) %>% 
-  group_by(name, cold) %>% 
-  summarize(count = n())
-```
-
-To actually make it look like a 2X2 table
-```{r}
-
-weather_df %>% 
-  filter(name != "Waikiki_HA") %>% 
-  mutate(
-    cold = case_when(
-      tmax < 5 ~ "cold",
-      tmax >= 5 ~ "not_cold",
-      TRUE      ~ ""
-    )
-  ) %>% 
-  janitor::tabyl(name, cold)
-```
-
-## General summaries 
-
-You can do lots of summaries
+Grad elements that I want.
 
 ```{r}
-weather_df %>% 
-  group_by(month) %>% 
-  summarize(
-    mean_tmax = mean(tmax, na.rm = TRUE), 
-    mean_prcp = mean(prcp, na.rm = TRUE),
-    median_tmin = median(tmin, na.rm = TRUE)
+titles_vec = 
+  swm_html %>% 
+  html_nodes(css = ".lister-item-header a") %>% 
+  html_text()
+
+gross_revenue_vec =
+  swm_html %>% 
+  html_nodes(css = ".text-small:nth-child(7) span:nth-child(5)") %>% 
+  html_text()
+
+runtime_vec = 
+  swm_html %>% 
+  html_nodes(css = ".runtime") %>% 
+  html_text()
+
+swm_df = 
+  tibble(
+    title = titles_vec,
+    gross_rev = gross_revenue_vec,
+    runtime = runtime_vec
   )
 ```
 
-This is a dataframe!
-
-```{r}
-weather_df %>% 
-  group_by(name, month) %>% 
-  summarize(
-    mean_tmax = mean(tmax, na.rm = TRUE), 
-    mean_prcp = mean(prcp, na.rm = TRUE),
-    median_tmin = median(tmin, na.rm = TRUE)
-  ) %>% 
-  ggplot(aes(x = month, y = mean_tmax, color = name)) +
-  geom_point() +
-  geom_line()
-```
-
-Suppose you want to summarize many columns in the same way
-
-```{r}
-weather_df %>% 
-  group_by(name, month) %>% 
-  summarize(across(prcp:tmin, mean))
-
-```
-
-Reminder: sometimes your results are easier to read in another format
-We can use "pivot wider" because we are doing these calculations in a dataframe
-pivot wider is easier to read
-"knitr::kable()" helps format info so it is easier to read (creates a table)
-```{r}
-weather_df %>% 
-  group_by(name, month) %>% 
-  summarize(mean_tmax = mean(tmax)) %>% 
-  pivot_wider(
-    names_from = name,
-    values_from = mean_tmax
-  ) %>% 
-knitr::kable(digits = 1)
-```
-
-## `group_by` and `mutate`
-
-mutate added a column to the existing dataframe
-
-```{r}
-weather_df %>% 
-  group_by(name) %>% 
-  mutate(
-    mean_tmax = mean(tmax, na.rm = TRUE),
-    center_tmax = tmax - mean_tmax
-  ) %>% 
-  ggplot(aes(x = date, y = center_tmax, color = name)) +
-  geom_point()
-```
-
-
-What about window functions?
-
-Rank function - ranks the values
-Min_rank ranks coldest as 1 and increases
-if you add descending 
-```{r}
-weather_df %>% 
-  group_by(name, month) %>% 
-  mutate(temp_rank = min_rank(tmax))
-```
-
-lag - shift variables by 1
-good for calculating change
-
-```{r}
-weather_df %>% 
-  group_by(name) %>% 
-  mutate(temp_change = tmax - lag(tmax)) %>% 
-  summarize(
-    temp_change_max = max(temp_change, na.rm = TRUE),
-    temp_change_sd = sd(temp_change, na.rm = TRUE)
-  )
-```
-
-##Quick Note
-
-summarize only gets you so far
