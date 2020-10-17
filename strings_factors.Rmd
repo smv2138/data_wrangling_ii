@@ -176,8 +176,17 @@ data_marj =
 ```
 
 
-```{r}
+## NSDUH -- factors
 
+can use fct_relevel in mutate statement to list out state you want to appear first in the graph
+fct_reorder reorders the data based on the percent variable
+```{r}
+data_marj %>% 
+  filter(age == "12-17") %>% 
+  mutate(State = fct_reorder(State, percent)) %>% 
+  ggplot(aes(x = State, y = percent, color = year))+
+  geom_point() +
+  theme (axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 ```
 
 
