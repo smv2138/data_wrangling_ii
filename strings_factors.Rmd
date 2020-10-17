@@ -136,15 +136,49 @@ as.numeric(factor_vec)
 ```
 
 
-## NSDUH
+## NSDUH -- strings
 
 
+```{r}
+url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+tbl_marj = 
+  read_html(url) %>% 
+  html_nodes(css = "table") %>% 
+  first() %>% 
+  html_table() %>%
+  slice(-1) %>% 
+  as_tibble()
+```
+
+Want to clean up tibble
+"(-contains)" removed everything that contains the following
+Pivot everything that isn't in the State column
+Easiest way to separate is to find the open parentheses (parentheses is a special character so we have to add "\\")
+"str_replace" to get rid of ending ")" in year variable 
+"!State" don't want state variable to be ....
+```{r}
+data_marj = 
+  tbl_marj %>% 
+  select(-contains("P Value")) %>% 
+  pivot_longer(
+    -State,
+    names_to = "age_year",
+    values_to = "percent"
+  ) %>% 
+  separate(age_year, into = c("age", "year"), sep = "\\(") %>% 
+  mutate(
+    year = str_replace(year, "\\)", ""),
+    percent = str_replace(percent, "[a-c]$", ""),
+    percent = as.numeric(percent)
+  ) %>% 
+  filter((!State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+```
 
 
+```{r}
 
-
-
-
+```
 
 
 
