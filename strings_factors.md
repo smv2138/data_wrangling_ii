@@ -187,4 +187,15 @@ as.numeric(factor_vec)
 
     ## [1] 2 2 1 1
 
-What happens if I relevel?
+What happens if I relevel? Noe male is listed as 1 instead of 2 There
+are lots of fct functions
+
+``` r
+factor_vec = fct_relevel(factor_vec, "male")
+
+as.numeric(factor_vec)
+```
+
+    ## [1] 1 1 2 2
+
+## NSDUH
