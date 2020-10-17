@@ -1,11 +1,12 @@
 ---
-title: "Reading Data from the Web"
+title: "Strings and Factors"
 output: github_document
 ---
 ```{r}
 library(tidyverse)
+library(p8105.datasets)
 library(rvest)
-library(httr)
+
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -27,122 +28,104 @@ scale_fill_discrete = scale_fill_viridis_d
 ```
 
 
-## Scrape a table from a website
+## Strings and regex
 
-I want to first table from this pay (this page http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm)
-
-Read in the html
+Create strings as vectors 
+detects a pattern in the string . We want to detect where "Jeff" is
 ```{r}
-url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+string_vec = c("my", "name", "is", "jeff")
 
-drug_use_html = read_html(url)
+str_detect(string_vec, "jeff")
+
+str_replace(string_vec, "jeff", "Jeff")
+
 
 ```
 
-Extract the tables we want. focus on the first table
-Still not a tibble but close
+"^i think" detect strings that begin with "i think"
+"i think$" detects strings that end with "i think"
 ```{r}
-drug_use_html %>% 
-  html_nodes(css = "table")
-```
-
-covert table from html to tibble format
-focus on the first table
-slice(-1) gers rid of first row
-```{r}
-tbl_marj = 
-  drug_use_html %>% 
-  html_nodes(css = "table") %>% 
-  first() %>% 
-  html_table() %>%
-  slice(-1) %>% 
-  as_tibble()
-
-```
-
-
-## star Wars Movie Info
-
-I want the data from (here) https://www.imdb.com/list/ls070150896/
-
-```{r}
-url = "https://www.imdb.com/list/ls070150896/"
-
-swm_html = read_html(url)
-```
-
-Grad elements that I want.
-
-```{r}
-titles_vec = 
-  swm_html %>% 
-  html_nodes(css = ".lister-item-header a") %>% 
-  html_text()
-
-gross_revenue_vec =
-  swm_html %>% 
-  html_nodes(css = ".text-small:nth-child(7) span:nth-child(5)") %>% 
-  html_text()
-
-runtime_vec = 
-  swm_html %>% 
-  html_nodes(css = ".runtime") %>% 
-  html_text()
-
-swm_df = 
-  tibble(
-    title = titles_vec,
-    gross_rev = gross_revenue_vec,
-    runtime = runtime_vec
+string_vec = c(
+  "i think we all rule for participating",
+  "i think i have been caught",
+  "i think this will be quite fun actually",
+  "it will be fun, i think"
   )
+
+str_detect(string_vec, "^i think")
+
+str_detect(string_vec, "i think$")
 ```
 
 
-## Get some water data (NYC Water)
-
-Example in both csv and json file
-"parsed" makes it a tibble
+"[Bb]" gives both strings with B or b in the string
 ```{r}
-nyc_water = 
-  GET("https://data.cityofnewyork.us/resource/ia2d-e54m.csv") %>% 
-  content("parsed")
-
-## structured differently
-nyc_water_json = 
-  GET("https://data.cityofnewyork.us/resource/ia2d-e54m.json") %>% 
-  content("text") %>% 
-  jsonlite::fromJSON() %>% 
-  as_tibble()
+string_vec = c(
+  "Y'all remember Pres. HW Bush?",
+  "I saw a green bush",
+  "BBQ and Bushwalking at Molonglo Gorge",
+  "BUSH -- LIVE IN CONCERT!!"
+  )
+str_detect(string_vec, "bush")
+str_detect(string_vec,"[Bb]ush")
 ```
 
 
-## BRFSS Dataset
-
-Same process, different data
-We only have 1000 rows but the website says we have 134k observations
-Its a setting with the data
+[0-9] anything between those 
+[a-zA-Z] anything betwen a-z capital or lowercase
 ```{r}
-brfss_2010 = 
-  GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv",
-      query = list("$limit" = 5000 )) %>% 
-   content("parsed")
+string_vec = c(
+  '7th inning stretch',
+  '1st half soon to begin. Texas won the toss.',
+  'she is 5 feet 4 inches tall',
+  '3AM - cant sleep :('
+  )
+
+str_detect(string_vec, "^[0-9][a-zA-Z]")
+
 ```
 
-## Some data aren't so nice
 
-Look at Pokemon
+"." matches anything in the string (dot is a special character)
+to match a literal dot, you have tell it that it is not a special character ("\\.")
 ```{r}
-pokemon_data = 
-  GET("https://pokeapi.co/api/v2/pokemon/1") %>% 
-  content
+string_vec = c(
+  'Its 7:11 in the evening',
+  'want to go to 7-11?',
+  'my flight is AA711',
+  'NetBios: scanning ip 203.167.114.66'
+  )
 
-pokemon_data$name
-pokemon_data$height
+str_detect(string_vec, "7.11")
+str_detect(string_vec, "7\\.11")
+ 
 ```
 
-## Closing thoughts
 
-Make reasonable requests of API server for your data
-Have one rmd where you ask servers for the data
-Then do analysis in a differ rmd so you don't have to ask for data everytime
+detect things NOT AS special characters
+```{r}
+string_vec = c(
+  'The CI is [2, 5]',
+  ':-]',
+  ':-[',
+  'I found the answer on pages [6-7]'
+  )
 
+str_detect(string_vec, "\\[")
+```
+
+## Factors
+
+Create a vector with a factor 
+"Levels" 
+By converting it to a numeric, we can see the integer baseline that underlies the factor
+```{r}
+factor_vec = factor(c("male", "male", "female", "female"))
+factor_vec
+
+as.numeric(factor_vec)
+```
+
+What happens if I relevel?
+
+```{r}
