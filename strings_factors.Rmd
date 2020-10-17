@@ -184,19 +184,47 @@ fct_reorder reorders the data based on the percent variable
 data_marj %>% 
   filter(age == "12-17") %>% 
   mutate(State = fct_reorder(State, percent)) %>% 
-  ggplot(aes(x = State, y = percent, color = year))+
+  ggplot(aes(x = State, y = percent, color = year)) +
   geom_point() +
-  theme (axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 ```
 
 
+## Weather dataset
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USC00519397", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USC00519397 = "Waikiki_HA",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
 
 
+```{r}
+weather_df %>% 
+  mutate(name = fct_reorder(name, tmax)) %>% 
+  ggplot(aes(x = name, y = tmax)) +
+  geom_violin()
+```
 
-
-
-
-
+Central park is the reference group (alphabetical order)
+By reordering by tmax, Waterhole is the ref because it has the lowest tmax
+```{r}
+weather_df %>% 
+  mutate(name = fct_reorder(name, tmax)) %>% 
+  lm(tmax ~ name, data = .)
+```
 
 
 
